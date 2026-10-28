@@ -1,0 +1,25 @@
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+coverage.out
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# IDEs and operating system files
+.idea/
+.vscode/
+.DS_Store
+
+# Logs and temporary files
+*.log
+tmp/
