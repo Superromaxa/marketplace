@@ -1,6 +1,6 @@
 package entities
 
-type CategoryItem struct {
+type CatalogItem struct {
 	BaseEntity
 	ShortDescription string
 	FullDescription  string
