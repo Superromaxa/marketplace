@@ -7,7 +7,7 @@ services:
     image: postgres:18.1
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=12345678
       - POSTGRES_DB=catalog-db-dev
     restart: always
     ports:

@@ -11,9 +11,9 @@ type CatalogItemRepository interface {
 }
 
 type BrandRepository interface {
-	Brand(ctx context.Context) ([]entities.Brand, error)
+	Brands(ctx context.Context) ([]entities.Brand, error)
 }
 
 type CategoryRepository interface {
-	Category(ctx context.Context) ([]entities.Category, error)
+	Categories(ctx context.Context) ([]entities.Category, error)
 }
