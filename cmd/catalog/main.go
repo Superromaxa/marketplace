@@ -46,12 +46,20 @@ func main() {
 	listBrandsHandler := queries.NewBrandsHandler(brandRepo)
 	brandsHandler := handlers.NewBrandsHandler(listBrandsHandler)
 
+	categoryRepo := persistence.NewCategoryRepository(db)
+	listCategoriesHandler := queries.NewCategoryHandler(categoryRepo)
+	categoriesHandler := handlers.NewCategoriesHandler(listCategoriesHandler)
+
+	itemsRepo := persistence.NewItemRepository(db)
+	listItemsHandler := queries.NewCatalogItemsHandler(itemsRepo)
+	catalogItemsHandler := handlers.NewCatalogItemsHandler(listItemsHandler)
+
 	r := gin.Default()
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"status": "ok"})
 	})
 
-	api.RegisterRoutes(r, brandsHandler)
+	api.RegisterRoutes(r, brandsHandler, categoriesHandler, catalogItemsHandler)
 
 	if err := r.Run(":" + appPort); err != nil {
 		log.Fatal(err)
