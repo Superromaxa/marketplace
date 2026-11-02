@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/Superromaxa/marketplace/internal/catalog/domain/entities"
+	"github.com/google/uuid"
 )
 
 type CatalogItemRepository interface {
 	Items(ctx context.Context) ([]entities.CatalogItem, error)
+	Item(ctx context.Context, id uuid.UUID) (*entities.CatalogItem, error)
 }
 
 type BrandRepository interface {

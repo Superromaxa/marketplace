@@ -52,7 +52,8 @@ func main() {
 
 	itemsRepo := persistence.NewItemRepository(db)
 	listItemsHandler := queries.NewCatalogItemsHandler(itemsRepo)
-	catalogItemsHandler := handlers.NewCatalogItemsHandler(listItemsHandler)
+	itemByID := queries.NewCatalogItemByIDHandler(itemsRepo)
+	catalogItemsHandler := handlers.NewCatalogItemsHandler(listItemsHandler, itemByID)
 
 	r := gin.Default()
 	r.GET("/health", func(ctx *gin.Context) {

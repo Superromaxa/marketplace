@@ -3,11 +3,29 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/Superromaxa/marketplace/internal/catalog/domain/entities"
 	"github.com/google/uuid"
 )
+
+const sqlCatalogItemsQuery = `
+    SELECT
+        ci.id,
+        ci.title,
+        COALESCE(ci.short_description, ''),
+		COALESCE(ci.full_description, ''),
+		COALESCE(ci.image_url, ''),
+		ci.price,
+        b.id,
+        b.title,
+        c.id,
+        c.title
+    FROM catalog_items AS ci
+    LEFT JOIN brands AS b ON b.id = ci.brand_id
+    LEFT JOIN categories AS c ON c.id = ci.category_id
+	`
 
 type itemRepository struct {
 	db *sql.DB
@@ -18,22 +36,7 @@ func NewItemRepository(db *sql.DB) *itemRepository {
 }
 
 func (i *itemRepository) Items(ctx context.Context) ([]entities.CatalogItem, error) {
-	query := `
-    SELECT
-        ci.id,
-        ci.title,
-        COALESCE(ci.short_description, ''),
-		COALESCE(ci.full_description, ''),
-		COALESCE(ci.image_url, ''),
-        b.id,
-        b.title,
-        c.id,
-        c.title
-    FROM catalog_items AS ci
-    LEFT JOIN brands AS b ON b.id = ci.brand_id
-    LEFT JOIN categories AS c ON c.id = ci.category_id
-    ORDER BY ci.title
-`
+	query := sqlCatalogItemsQuery + " ORDER BY ci.title"
 	rows, err := i.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -49,19 +52,44 @@ func (i *itemRepository) Items(ctx context.Context) ([]entities.CatalogItem, err
 			return nil, fmt.Errorf("failed to scan items: %w", err)
 		}
 
-		items = append(items, item)
+		items = append(items, *item)
 	}
-	return items, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate items: %w", err)
+	}
+	return items, nil
 }
 
-func scanCatalogItem(rows *sql.Rows) (entities.CatalogItem, error) {
-	var item entities.CatalogItem
+func (i *itemRepository) Item(ctx context.Context, id uuid.UUID) (*entities.CatalogItem, error) {
+	query := sqlCatalogItemsQuery + " WHERE ci.id = $1"
+	row := i.db.QueryRowContext(ctx, query, id)
+
+	item, err := scanCatalogItem(row)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to get item: %w", err)
+	}
+
+	return item, nil
+}
+
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+func scanCatalogItem(s scanner) (*entities.CatalogItem, error) {
+	var item *entities.CatalogItem = &entities.CatalogItem{}
 	var brandID *uuid.UUID
 	var brandTitle *string
 	var categoryID *uuid.UUID
 	var categoryTitle *string
 
-	err := rows.Scan(
+	err := s.Scan(
 		&item.ID,
 		&item.Title,
 		&item.ShortDescription,
@@ -74,7 +102,7 @@ func scanCatalogItem(rows *sql.Rows) (entities.CatalogItem, error) {
 		&categoryTitle)
 
 	if err != nil {
-		return item, fmt.Errorf("failed to scan item: %w", err)
+		return nil, fmt.Errorf("failed to scan item: %w", err)
 	}
 
 	if brandID != nil {
