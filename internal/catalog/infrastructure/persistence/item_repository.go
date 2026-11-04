@@ -78,6 +78,32 @@ func (i *itemRepository) Item(ctx context.Context, id uuid.UUID) (*entities.Cata
 	return item, nil
 }
 
+func (i *itemRepository) ItemsByTitle(ctx context.Context, title string) ([]entities.CatalogItem, error) {
+	query := sqlCatalogItemsQuery + " WHERE ci.title ILIKE $1 ORDER BY ci.title"
+	rows, err := i.db.QueryContext(ctx, query, "%"+title+"%")
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to load items by title: %w", err)
+	}
+	defer rows.Close()
+
+	items := []entities.CatalogItem{}
+	for rows.Next() {
+		item, err := scanCatalogItem(rows)
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan items by title: %w", err)
+		}
+
+		items = append(items, *item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate items: %w", err)
+	}
+	return items, nil
+}
+
 type scanner interface {
 	Scan(dest ...any) error
 }

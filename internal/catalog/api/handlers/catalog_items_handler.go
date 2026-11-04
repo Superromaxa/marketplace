@@ -9,15 +9,21 @@ import (
 )
 
 type CatalogItemsHandler struct {
-	catalogItems    *queries.CatalogItemsHandler
-	catalogItemByID *queries.CatalogItemByIDHandler
+	catalogItems        *queries.CatalogItemsHandler
+	catalogItemByID     *queries.CatalogItemByIDHandler
+	catalogItemsByTitle *queries.CatalogItemsByTitleHandler
 }
 
 func NewCatalogItemsHandler(
 	catalogItems *queries.CatalogItemsHandler,
 	catalogItemByID *queries.CatalogItemByIDHandler,
+	catalogItemsByTitle *queries.CatalogItemsByTitleHandler,
 ) *CatalogItemsHandler {
-	return &CatalogItemsHandler{catalogItems: catalogItems, catalogItemByID: catalogItemByID}
+	return &CatalogItemsHandler{
+		catalogItems:        catalogItems,
+		catalogItemByID:     catalogItemByID,
+		catalogItemsByTitle: catalogItemsByTitle,
+	}
 }
 
 func (ci *CatalogItemsHandler) CatalogItems(ctx *gin.Context) {
@@ -63,5 +69,22 @@ func (ci *CatalogItemsHandler) CatalogItemByID(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"catalogItem": item,
+	})
+}
+
+func (ci *CatalogItemsHandler) CatalogItemsByTitle(ctx *gin.Context) {
+	title := ctx.Param("title")
+
+	items, err := ci.catalogItemsByTitle.Handle(ctx.Request.Context(), title)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"result": items,
 	})
 }
