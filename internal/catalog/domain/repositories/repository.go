@@ -11,6 +11,9 @@ type CatalogItemRepository interface {
 	Items(ctx context.Context) ([]entities.CatalogItem, error)
 	Item(ctx context.Context, id uuid.UUID) (*entities.CatalogItem, error)
 	ItemsByTitle(ctx context.Context, title string) ([]entities.CatalogItem, error)
+
+	Create(ctx context.Context, item entities.CatalogItem) (entities.CatalogItem, error)
+	Update(ctx context.Context, item entities.CatalogItem) (bool, error)
 }
 
 type BrandRepository interface {

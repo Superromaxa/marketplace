@@ -8,6 +8,7 @@ import (
 
 	"github.com/Superromaxa/marketplace/internal/catalog/api"
 	"github.com/Superromaxa/marketplace/internal/catalog/api/handlers"
+	"github.com/Superromaxa/marketplace/internal/catalog/application/commands"
 	"github.com/Superromaxa/marketplace/internal/catalog/application/queries"
 	"github.com/Superromaxa/marketplace/internal/catalog/infrastructure/persistence"
 	"github.com/gin-gonic/gin"
@@ -42,20 +43,29 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Brand Handlers
 	brandRepo := persistence.NewBrandRepository(db)
 	listBrandsHandler := queries.NewBrandsHandler(brandRepo)
 	brandsHandler := handlers.NewBrandsHandler(listBrandsHandler)
 
+	// Category Handlers
 	categoryRepo := persistence.NewCategoryRepository(db)
 	listCategoriesHandler := queries.NewCategoryHandler(categoryRepo)
 	categoriesHandler := handlers.NewCategoriesHandler(listCategoriesHandler)
 
+	// CatalogItem Handlers
 	itemsRepo := persistence.NewItemRepository(db)
+
 	listItemsHandler := queries.NewCatalogItemsHandler(itemsRepo)
 	itemByID := queries.NewCatalogItemByIDHandler(itemsRepo)
 	itemsByTitle := queries.NewCatalogItemsByTitleHandler(itemsRepo)
-	catalogItemsHandler := handlers.NewCatalogItemsHandler(listItemsHandler, itemByID, itemsByTitle)
+	createItem := commands.NewCreateCatalogItemHandler(itemsRepo)
+	updateItem := commands.NewUpdateCatalogItemHandler(itemsRepo)
 
+	catalogItemsHandler := handlers.NewCatalogItemsHandler(
+		listItemsHandler, itemByID, itemsByTitle, createItem, updateItem)
+
+	// Starting
 	r := gin.Default()
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"status": "ok"})

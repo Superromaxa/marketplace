@@ -104,6 +104,81 @@ func (i *itemRepository) ItemsByTitle(ctx context.Context, title string) ([]enti
 	return items, nil
 }
 
+func (i *itemRepository) Create(ctx context.Context, item entities.CatalogItem) (entities.CatalogItem, error) {
+	if item.ID == uuid.Nil {
+		item.ID = uuid.New()
+	}
+
+	var brandID, categoryID *uuid.UUID
+
+	if item.Brand != nil {
+		brandID = &item.Brand.ID
+	}
+	if item.Category != nil {
+		categoryID = &item.Category.ID
+	}
+
+	sqlQuery := `
+	INSERT INTO catalog_items (
+		id,
+		title,
+	    short_description,
+	    full_description,
+	    image_url,
+	    brand_id,
+	    category_id,
+	    price
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+	`
+
+	_, err := i.db.ExecContext(ctx, sqlQuery,
+		item.ID, item.Title, item.ShortDescription, item.FullDescription, item.ImageURL, brandID, categoryID, item.Price,
+	)
+
+	if err != nil {
+		return entities.CatalogItem{}, fmt.Errorf("failed to create item: %w", err)
+	}
+
+	return item, nil
+}
+
+func (i *itemRepository) Update(ctx context.Context, item entities.CatalogItem) (bool, error) {
+	var brandID, categoryID *uuid.UUID
+
+	if item.Brand != nil {
+		brandID = &item.Brand.ID
+	}
+	if item.Category != nil {
+		categoryID = &item.Category.ID
+	}
+
+	sqlQuery := `
+	UPDATE catalog_items SET
+		title = $1,
+	    short_description = $2,
+	    full_description = $3,
+	    image_url = $4,
+	    brand_id = $5,
+	    category_id = $6,
+	    price = $7
+	WHERE id = $8;
+	`
+
+	result, err := i.db.ExecContext(ctx, sqlQuery,
+		item.Title, item.ShortDescription, item.FullDescription, item.ImageURL, brandID, categoryID, item.Price, item.ID)
+
+	if err != nil {
+		return false, fmt.Errorf("failed to update item[%v]: %w", item.ID, err)
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	return n > 0, nil
+}
+
 type scanner interface {
 	Scan(dest ...any) error
 }
