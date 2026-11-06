@@ -104,6 +104,30 @@ func (i *itemRepository) ItemsByTitle(ctx context.Context, title string) ([]enti
 	return items, nil
 }
 
+func (i *itemRepository) ItemsByBrand(ctx context.Context, brand string) ([]entities.CatalogItem, error) {
+	query := sqlCatalogItemsQuery + " WHERE b.title ILIKE $1 ORDER BY ci.title"
+
+	rows, err := i.db.QueryContext(ctx, query, "%"+brand+"%")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load items by brand: %w", err)
+	}
+	defer rows.Close()
+
+	items := []entities.CatalogItem{}
+	for rows.Next() {
+		item, err := scanCatalogItem(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan items by brand: %w", err)
+		}
+		items = append(items, *item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate items by brand: %w", err)
+	}
+	return items, nil
+}
+
 func (i *itemRepository) Create(ctx context.Context, item entities.CatalogItem) (entities.CatalogItem, error) {
 	if item.ID == uuid.Nil {
 		item.ID = uuid.New()
@@ -169,6 +193,23 @@ func (i *itemRepository) Update(ctx context.Context, item entities.CatalogItem) 
 
 	if err != nil {
 		return false, fmt.Errorf("failed to update item[%v]: %w", item.ID, err)
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	return n > 0, nil
+}
+
+func (i *itemRepository) Delete(ctx context.Context, id uuid.UUID) (bool, error) {
+	sqlQuery := `DELETE FROM catalog_items
+       WHERE id = $1;`
+
+	result, err := i.db.ExecContext(ctx, sqlQuery, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete item[%v]: %w", id, err)
 	}
 
 	n, err := result.RowsAffected()

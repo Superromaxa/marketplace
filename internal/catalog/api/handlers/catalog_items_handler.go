@@ -13,25 +13,31 @@ type CatalogItemsHandler struct {
 	catalogItems        *queries.CatalogItemsHandler
 	catalogItemByID     *queries.CatalogItemByIDHandler
 	catalogItemsByTitle *queries.CatalogItemsByTitleHandler
+	catalogItemsByBrand *queries.CatalogItemsByBrandHandler
 
 	createCatalogItem *commands.CreateCatalogItemHandler
 	updateCatalogItem *commands.UpdateCatalogItemHandler
+	deleteCatalogItem *commands.DeleteCatalogItemHandler
 }
 
 func NewCatalogItemsHandler(
 	catalogItems *queries.CatalogItemsHandler,
 	catalogItemByID *queries.CatalogItemByIDHandler,
 	catalogItemsByTitle *queries.CatalogItemsByTitleHandler,
+	catalogItemsByBrand *queries.CatalogItemsByBrandHandler,
 	createCatalogItem *commands.CreateCatalogItemHandler,
 	updateCatalogItem *commands.UpdateCatalogItemHandler,
+	deleteCatalogItem *commands.DeleteCatalogItemHandler,
 ) *CatalogItemsHandler {
 	return &CatalogItemsHandler{
 		catalogItems:        catalogItems,
 		catalogItemByID:     catalogItemByID,
 		catalogItemsByTitle: catalogItemsByTitle,
+		catalogItemsByBrand: catalogItemsByBrand,
 
 		createCatalogItem: createCatalogItem,
 		updateCatalogItem: updateCatalogItem,
+		deleteCatalogItem: deleteCatalogItem,
 	}
 }
 
@@ -98,6 +104,23 @@ func (ci *CatalogItemsHandler) CatalogItemsByTitle(ctx *gin.Context) {
 	})
 }
 
+func (ci *CatalogItemsHandler) CatalogItemsByBrand(ctx *gin.Context) {
+	brand := ctx.Param("brand")
+
+	items, err := ci.catalogItemsByBrand.Handle(ctx.Request.Context(), brand)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"result": items,
+	})
+}
+
 func (ci *CatalogItemsHandler) CreateCatalogItem(ctx *gin.Context) {
 	var cmd commands.CreateCatalogItemCommand
 	if err := ctx.ShouldBindJSON(&cmd); err != nil {
@@ -147,6 +170,35 @@ func (ci *CatalogItemsHandler) UpdateCatalogItem(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"updated": true,
+		"result": true,
+	})
+}
+
+func (ci *CatalogItemsHandler) DeleteCatalogItem(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "wrong id",
+		})
+		return
+	}
+
+	success, err := ci.deleteCatalogItem.Handle(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if !success {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"error": "item not found",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"result": true,
 	})
 }

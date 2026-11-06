@@ -43,33 +43,41 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//===========================================================
 	// Brand Handlers
 	brandRepo := persistence.NewBrandRepository(db)
 	listBrandsHandler := queries.NewBrandsHandler(brandRepo)
 	brandsHandler := handlers.NewBrandsHandler(listBrandsHandler)
+	//===========================================================
 
+	//===========================================================
 	// Category Handlers
 	categoryRepo := persistence.NewCategoryRepository(db)
 	listCategoriesHandler := queries.NewCategoryHandler(categoryRepo)
 	categoriesHandler := handlers.NewCategoriesHandler(listCategoriesHandler)
+	//===========================================================
 
+	//===========================================================
 	// CatalogItem Handlers
 	itemsRepo := persistence.NewItemRepository(db)
-
+	//===========================================================
 	listItemsHandler := queries.NewCatalogItemsHandler(itemsRepo)
 	itemByID := queries.NewCatalogItemByIDHandler(itemsRepo)
 	itemsByTitle := queries.NewCatalogItemsByTitleHandler(itemsRepo)
+	itemsByBrand := queries.NewCatalogItemsByBrandHandler(itemsRepo)
 	createItem := commands.NewCreateCatalogItemHandler(itemsRepo)
 	updateItem := commands.NewUpdateCatalogItemHandler(itemsRepo)
-
+	deleteItem := commands.NewDeleteCatalogItemHandler(itemsRepo)
+	//===========================================================
 	catalogItemsHandler := handlers.NewCatalogItemsHandler(
-		listItemsHandler, itemByID, itemsByTitle, createItem, updateItem)
+		listItemsHandler, itemByID, itemsByTitle, itemsByBrand, createItem, updateItem, deleteItem)
+	//===========================================================
 
-	// Starting
+	// Starting ===========================================================
 	r := gin.Default()
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"status": "ok"})
-	})
+	}) //==================================================================
 
 	api.RegisterRoutes(r, brandsHandler, categoriesHandler, catalogItemsHandler)
 
